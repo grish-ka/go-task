@@ -6,6 +6,7 @@ import (
 	"sort"
 	"time"
 	"strings"
+	"flag"
 
 	tea "github.com/charmbracelet/bubbletea"
 	lipgloss "github.com/charmbracelet/lipgloss"
@@ -25,6 +26,12 @@ type Task struct {
 }
 
 var blueStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
+
+var (
+    version = "dev"
+    commit  = "none"
+    date    = "unknown"
+)
 
 type timerFinishedMsg struct {
 	index    int
@@ -129,7 +136,7 @@ func (m model) View() string {
     }
 
     // Start building our final string 's'
-    s := "Go-Task Manager 🚀\n\n"
+    s := "Go-Task Manager  \n\n"
     s += fmt.Sprintf("%-17s | %s %5.1f%%\n", "CPU", blueStyle.Render(cpuBar), totalCpu)
     s += fmt.Sprintf("%-17s | %s %5.1f%%\n", fmt.Sprintf("RAM %.1f/%0.1fGB", totalRam, maxRam), blueStyle.Render(ramBar), ramPer)
     s += fmt.Sprintf("%-17s | %s %5.1f%%\n", "GPU", blueStyle.Render(gpuBar), totalGpu)
@@ -169,6 +176,22 @@ func (m model) View() string {
 }
 
 func main() {
+
+	var showVersion bool
+    flag.BoolVar(&showVersion, "V", false, "print the version and exit")
+    flag.BoolVar(&showVersion, "version", false, "print the version and exit")
+    
+    flag.Parse()
+
+	if showVersion {
+        fmt.Printf("grish-ka go-task %s\n", version)
+        fmt.Printf("Copyright (c) 2026 grish-ka\n")
+        fmt.Println("License GPLv3: GNU GPL version 3 <https://gnu.org/licenses/gpl.html>")
+		fmt.Printf("Commit:  %s\n", commit)
+		fmt.Printf("Build Date: %s\n", date)
+        return
+    }
+
 	initialModel := model{
 		tasks: []Task{
 			{Name: "Web Server", State: "Running", Ram: 1.2, Cpu: 0.5, Gpu: 0.0},

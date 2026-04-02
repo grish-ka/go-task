@@ -1,0 +1,94 @@
+version: 2
+project_name: go-task
+
+# Preparation before building
+before:
+  hooks:
+    - go mod tidy
+    - go generate ./...
+
+# The actual Go Compilation logic
+builds:
+  - id: go-task-binary
+    main: ./main.go
+    binary: go-task
+    ldflags:
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+      - "386" # Targets your custom machine / 32-bit systems
+
+# Zipped/Tarballed binaries for manual download
+archives:
+  - id: default
+    formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+# --- THE PACKAGING SECTION (nFPM) ---
+nfpms:
+  - id: go-task-pkg
+    package_name: go-task
+    # Conventional naming: go-task_1.0.0_amd64.deb
+    file_name_template: "{{ .PackageName }}_{{ .Version }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    
+    # Link this package to the build we defined above
+    ids:
+      - go-task-binary
+    
+    vendor: go-task-contributors
+    homepage: https://github.com/grish-ka/go-task
+    maintainer: "grishka.krot@gmail.com" # ⚠️ Change this
+    description: |
+      A snappy TUI Task Manager.
+      Features include real-time CPU, RAM, and GPU synchronization.
+    license: "GPL-3.0"
+    
+    formats:
+      - deb
+      - rpm
+      - archlinux
+
+    # Note: 'contents' is empty because GoReleaser 
+    # automatically puts the binary in /usr/bin for you.
+
+    overrides:
+      rpm:
+        # Note: 'arch' line was removed as it's not supported here.
+        # It auto-labels 386 as i386.
+        scripts:
+          postinstall: ./scripts/postinstall.sh
+      deb:
+        scripts:
+          postinstall: ./scripts/postinstall.sh
+
+# Automatic changelog generation from commits
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+# GitHub Release page settings
+release:
+  prerelease: auto # Tags like v0.1.0-beta.1 will be marked as Pre-release
+  footer: |
+    ---
+    🚀 Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
